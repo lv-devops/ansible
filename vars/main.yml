@@ -1,0 +1,42 @@
+##################################
+# php
+##################################
+php_executable: "php8.1"
+php_enablerepo: "remi-php81"
+php_webserver_daemon: "nginx"
+
+###    php-fpm
+php_enable_php_fpm: true
+php_fpm_state: started
+php_fpm_enabled_on_boot: true
+
+###    php.ini settings
+php_use_managed_ini: true
+php_memory_limit: "128M"
+php_max_execution_time: "90"
+php_upload_max_filesize: "256M"
+php_date_timezone: "Europe/Kyiv"
+
+###    php_packages:
+php_packages:
+  - php
+  - php-cli
+  - php-common
+  - php-devel
+  - php-gd
+  - php-mbstring
+  - php-pdo
+  - php-pecl-apcu
+  - php-xml
+  
+###################################
+# nginx
+###################################
+#nginx_port: 80
+nginx_listen_ipv6: false
+nginx_vhost_template: "vhost.j2"
+
+###################################
+# mariadb
+###################################
+

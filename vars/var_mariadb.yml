@@ -1,0 +1,8 @@
+mariadb_root_password: "{{ mariadb_root_password_vault }}"
+mariadb_databases: 
+  - name: 'moodle'
+mariadb_users: 
+  - name: 'moodleuser'
+    password: "{{ moodleuserpassword }}"
+    priv: 'moodle.*:ALL'
+#    host: '127.0.0.1'
