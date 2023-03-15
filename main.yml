@@ -13,7 +13,11 @@
         
   roles:
   - role: ansible-role-repo-epel
+    when: ansible_os_family == 'RedHat'
+  - role: ansible-role-php-versions
+    when: ansible_os_family == 'Debian'
   - role: ansible-role-php
   - role: ansible-role-nginx
   - role: ansible-role-mariadb
+
   
