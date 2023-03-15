@@ -1,2 +1,2 @@
-jobe ansible_connection=local
+#jobe ansible_connection=local
 moodle-host ansible_connection=local

@@ -1,5 +1,5 @@
 ---
-- hosts: moodle-host
+- hosts: all
   become: yes
   vars:
     nginx_vhosts:
