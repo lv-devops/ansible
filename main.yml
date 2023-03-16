@@ -5,19 +5,58 @@
     nginx_vhosts:
       - server_name: "test.dev"
         root: "/var/www/test"
+
+    pre_tasks:
+    - name: "Clone of single branch {{ item }}"
+      git:
+        repo: "https://github.com/geerlingguy/{{ item }}.git"
+        dest: "{{ playbook_dir }}/roles/{{ item }}"
+        single_branch: yes
+        version: master
+      loop: "{{ git_reponame }}"
+
                     
   vars_files:
     - vars/main.yml
     - vars/vault.yml
     - vars/var_mariadb.yml
+
+  pre_tasks:
+    - name: "Clone of single branch {{ item }}"
+      git:
+        repo: "https://github.com/geerlingguy/{{ item }}.git"
+        dest: "{{ playbook_dir }}/roles/{{ item }}"
+        single_branch: yes
+        version: master
+      loop: "{{ git_reponame }}"
+
         
   roles:
   - role: ansible-role-repo-epel
     when: ansible_os_family == 'RedHat'
   - role: ansible-role-php-versions
+    vars:
+      php_version: '8.2'
     when: ansible_os_family == 'Debian'
   - role: ansible-role-php
+    vars:
+      php_executable: "php8.2"
+      php_enablerepo: "remi-php82"
+      php_webserver_daemon: "nginx"
+      ###    php-fpm
+      php_enable_php_fpm: true
+      php_fpm_state: started
+      php_fpm_enabled_on_boot: true
+      ###    php.ini settings
+      php_use_managed_ini: true
+      php_memory_limit: "128M"
+      php_max_execution_time: "90"
+      php_upload_max_filesize: "256M"
+      php_date_timezone: "Europe/Kyiv"
   - role: ansible-role-nginx
+    vars:
+      nginx_listen_ipv6: false
+      nginx_vhost_template: "vhost.j2"
   - role: ansible-role-mariadb
 
   
