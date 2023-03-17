@@ -1,7 +1,7 @@
 ---
 all:
-  hosts:
-    moodle.site.io:
+#  hosts:
+#    moodle.site.io:
   children:
     web_group:
       hosts:

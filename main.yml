@@ -5,13 +5,12 @@
 #    nginx_vhosts:
 #      - server_name: "test.dev"
 #        root: "/var/www/test"
-....................
+
   vars_files:
     - vars/main.yml
     - vars/vault.yml
     - vars/var_mariadb.yml
 
-........
   roles:
   - role: geerlingguy.repo-epel
     when: ansible_os_family == 'RedHat'

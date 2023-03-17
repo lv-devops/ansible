@@ -1,11 +1,10 @@
-# to download, run ansible-galaxy install -r requirements.yml --force
 - src: geerlingguy.repo-epel
   version: 3.1.1
   when: ansible_os_family == 'RedHat'
   
 - src: geerlingguy.php-versions
   version: 6.0.0
-..
+
 - src: geerlingguy.php
   version: 4.8.0
 
