@@ -5,16 +5,6 @@
     nginx_vhosts:
       - server_name: "test.dev"
         root: "/var/www/test"
-
-    pre_tasks:
-    - name: "Clone of single branch {{ item }}"
-      git:
-        repo: "https://github.com/geerlingguy/{{ item }}.git"
-        dest: "{{ playbook_dir }}/roles/{{ item }}"
-        single_branch: yes
-        version: master
-      loop: "{{ git_reponame }}"
-
                     
   vars_files:
     - vars/main.yml
@@ -32,13 +22,13 @@
 
         
   roles:
-  - role: ansible-role-repo-epel
+  - role: geerlingguy.repo-epel
     when: ansible_os_family == 'RedHat'
-  - role: ansible-role-php-versions
-    vars:
-      php_version: '8.2'
-    when: ansible_os_family == 'Debian'
-  - role: ansible-role-php
+  - role: geerlingguy.php-versions
+#    vars:
+#      php_version: '8.2'
+#    when: ansible_os_family == 'Debian'
+  - role: geerlingguy.php
     vars:
       php_executable: "php8.2"
       php_enablerepo: "remi-php82"
@@ -53,10 +43,10 @@
       php_max_execution_time: "90"
       php_upload_max_filesize: "256M"
       php_date_timezone: "Europe/Kyiv"
-  - role: ansible-role-nginx
+  - role: geerlingguy.nginx
     vars:
       nginx_listen_ipv6: false
       nginx_vhost_template: "vhost.j2"
-  - role: ansible-role-mariadb
+#  - role: ansible-role-mariadb
 
   
