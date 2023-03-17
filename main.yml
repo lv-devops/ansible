@@ -1,26 +1,17 @@
 ---
 - hosts: all
   become: yes
-  vars:
-    nginx_vhosts:
-      - server_name: "test.dev"
-        root: "/var/www/test"
-                    
+#  vars:
+#    nginx_vhosts:
+#      - server_name: "test.dev"
+#        root: "/var/www/test"
+....................
   vars_files:
     - vars/main.yml
     - vars/vault.yml
     - vars/var_mariadb.yml
 
-  pre_tasks:
-    - name: "Clone of single branch {{ item }}"
-      git:
-        repo: "https://github.com/geerlingguy/{{ item }}.git"
-        dest: "{{ playbook_dir }}/roles/{{ item }}"
-        single_branch: yes
-        version: master
-      loop: "{{ git_reponame }}"
-
-        
+........
   roles:
   - role: geerlingguy.repo-epel
     when: ansible_os_family == 'RedHat'
@@ -28,6 +19,8 @@
 #    vars:
 #      php_version: '8.2'
 #    when: ansible_os_family == 'Debian'
+    tags:
+      - web
   - role: geerlingguy.php
     vars:
       php_executable: "php8.2"
@@ -43,10 +36,14 @@
       php_max_execution_time: "90"
       php_upload_max_filesize: "256M"
       php_date_timezone: "Europe/Kyiv"
+    tags:
+      - web
   - role: geerlingguy.nginx
     vars:
       nginx_listen_ipv6: false
       nginx_vhost_template: "vhost.j2"
-#  - role: ansible-role-mariadb
-
-  
+    tags:
+      - web
+  - role: bertvv.mariadb
+    tags:
+      - db

@@ -1,2 +1,19 @@
-#jobe ansible_connection=local
-moodle-host ansible_connection=local
+---
+all:
+  hosts:
+    moodle.site.io:
+  children:
+    web_group:
+      hosts:
+        vmd-instance-mig*:
+        demo:
+      vars:
+        ansible_connection: local
+        tags: web
+
+    db_group:
+      hosts:
+        vmd-db-mig*:
+      vars:
+        ansible_connection: local
+        tags: db
