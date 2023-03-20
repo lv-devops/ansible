@@ -39,8 +39,11 @@
       - web
   - role: geerlingguy.nginx
     vars:
-      nginx_listen_ipv6: false
+      nginx_listen_ipv6: true
+      nginx_vhosts: [demo.site]
       nginx_vhost_template: "vhost.j2"
+      nginx_service_state: started
+      nginx_service_enabled: yes
     tags:
       - web
   - role: bertvv.mariadb
