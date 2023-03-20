@@ -5,7 +5,7 @@ all:
   children:
     web_group:
       hosts:
-        vmd-instance-mig*:
+        #vmd-instance-mig*:
         demo:
       vars:
         ansible_connection: local
