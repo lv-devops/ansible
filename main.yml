@@ -1,10 +1,6 @@
 ---
 - hosts: all
   become: yes
-#  vars:
-#    nginx_vhosts:
-#      - server_name: "test.dev"
-#        root: "/var/www/test"
 
   vars_files:
     - vars/main.yml
@@ -40,12 +36,104 @@
   - role: geerlingguy.nginx
     vars:
       nginx_listen_ipv6: true
-      nginx_vhosts: [demo.site]
-      nginx_vhost_template: "vhost.j2"
       nginx_service_state: started
       nginx_service_enabled: yes
+      nginx_vhosts:
+        - listen: "80 http2"
+          server_name: "example.com"
+          server_name_redirect: "www.example.com"
+          root: "/var/www/html/moodle"
+          index: "index.php"
+          error_page: "/var/log/{{ php_webserver_daemon }}/error.log"
+          access_log: "/var/log/{{ php_webserver_daemon }}/{{ server_name }}_access.log"
+          error_log: "/var/log/{{ php_webserver_daemon }}/{{ server_name }}_error.log"
+          state: "present"
+          template: "{{ nginx_vhost_template }}"
+          filename: "{{ server_name }}.conf"
+          extra_parameters: |
+            location ~ \.php$ {
+              fastcgi_split_path_info  ^(.+\.php)(/.+)$;
+              fastcgi_index            index.php;
+              fastcgi_pass             127.0.0.1:9000;
+              include                  fastcgi_params;
+              fastcgi_param   PATH_INFO       $fastcgi_path_info;
+              fastcgi_param   SCRIPT_FILENAME $document_root$fastcgi_script_name;
+              fastcgi_read_timeout 250s;
+            }
+            location /dataroot/ {
+              internal;
+              alias /var/moodledata; # ensure the path ends with /
+            }
     tags:
       - web
   - role: bertvv.mariadb
     tags:
       - db
+  - tasks:
+    - name: " create www_root dir for Moodle"
+      file:
+        path: /var/www/html
+        state: directory
+      tags:
+        - web
+
+    - name: " create storage moodledata"
+      file:
+        path: /var/moodledata
+        state: directory
+      tags:
+        - web
+
+    - name: Add gcsfuse package repository
+      vars:
+        repo_url:
+          Debian: "deb http://packages.cloud.google.com/apt gcsfuse-{{ ansible_distribution_release }} main"
+          RedHat: "https://packages.cloud.google.com/yum/repos/gcsfuse-el{{ ansible_distribution_major_version }}-x86_64"
+        repo_key_url:
+          Debian: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+          RedHat: "https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg"
+      apt_key:
+        url: "{{ repo_key_url[ansible_os_family] }}"
+        state: present
+      apt_repository:
+        repo: "{{ repo_url[ansible_os_family] }}"
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Add gcsfuse package repository
+      vars:
+        repo_url: "https://packages.cloud.google.com/yum/repos/gcsfuse-el{{ ansible_distribution_major_version }}-x86_64"
+        repo_key_url: "https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg"
+      yum_repository:
+        name: gcsfuse
+        baseurl: "{{ repo_url }}"
+        gpgcheck: yes
+        gpgkey: "{{ repo_key_url }}"
+      when: ansible_os_family == "RedHat"
+
+    - name: Install gcsfuse
+      vars:
+        package_name:
+          Debian: gcsfuse
+          RedHat: gcsfuse-fuse
+      package:
+        name: "{{ package_name[ansible_os_family] }}"
+        state: present
+
+    - name: Create mount point
+      file:
+        path: /var/moodledata
+        state: directory
+    
+    - name: Mount GCS bucket
+      mount:
+        path: /var/moodledata
+        src: "gcsfuse://moodledata_storage"
+        fstype: fuse
+        opts: rw,allow_other
+        state: mounted
+
+    - name: "Clone Moodle from GitHub"
+      command: git clone --depth 1 --branch v{{ moodle_version }}  {{ moodle_scr }} {{ root }}
+      tags:
+        - web
