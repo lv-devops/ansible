@@ -2,18 +2,43 @@
 - hosts: all
   become: yes
 
+  vars:
+    nginx_listen_port: 80
+    nginx_root_dir: "/var/www/html/moodle"
+    nginx_index_file: "index.php"
+
+    moodle_git_scr: "https://github.com/moodle/moodle.git"
+    moodle_version: "4.1.0"
+
   vars_files:
     - vars/main.yml
     - vars/vault.yml
     - vars/var_mariadb.yml
 
+  pre_tasks:
+    - name: Update apt cache.
+      apt: update_cache=yes cache_valid_time=600
+      when: ansible_os_family == 'Debian'
+      changed_when: false
+
+    - name: " create www_root dir for Moodle"
+      file:
+        path: /var/www/html/moodle/
+        state: directory
+      tags:
+        - web
+
+    - name: " create storage moodledata"
+      file:
+        path: /var/moodledata/
+        state: directory
+      tags:
+        - web
+
   roles:
   - role: geerlingguy.repo-epel
     when: ansible_os_family == 'RedHat'
   - role: geerlingguy.php-versions
-#    vars:
-#      php_version: '8.2'
-#    when: ansible_os_family == 'Debian'
     tags:
       - web
   - role: geerlingguy.php
@@ -42,16 +67,16 @@
       nginx_vhost_template: "vhost.j2"
       nginx_vhosts:
         - listen: "80"
-          server_name: "example.com"
-          server_name_redirect: "www.example.com"
+          server_name: "demo.ss.lk"
+          server_name_redirect: "www.demo.ss.lk"
           root: "/var/www/html/moodle"
           index: "index.php"
-          error_page: "/var/log/{{ php_webserver_daemon }}/error.log"
-          access_log: "/var/log/{{ php_webserver_daemon }}/{{ server_name }}_access.log"
-          error_log: "/var/log/{{ php_webserver_daemon }}/{{ server_name }}_error.log"
+          error_page: "/var/log/nginx/error.log"
+          access_log: "/var/log/nginx/demo_access.log"
+          error_log: "/var/log/nginx/demo__error.log"
           state: "present"
           template: "{{ nginx_vhost_template }}"
-          filename: "{{ server_name }}.conf"
+          filename: "demo.conf"
           extra_parameters: |
             location ~ \.php$ {
               fastcgi_split_path_info  ^(.+\.php)(/.+)$;
@@ -74,48 +99,6 @@
     tags:
       - db
   tasks:
-    - name: " create www_root dir for Moodle"
-      file:
-        path: /var/www/html
-        state: directory
-      tags:
-        - web
-
-    - name: " create storage moodledata"
-      file:
-        path: /var/moodledata
-        state: directory
-      tags:
-        - web
-
-    - name: "Add gcsfuse package repository"
-      apt_repository:
-        repo: ""deb http://packages.cloud.google.com/apt gcsfuse-{{ ansible_distribution_release }} main""
-        state: present
-      when: ansible_os_family == "Debian"
-
-    - name: Add gcsfuse package repository
-      yum_repository:
-        name: gcsfuse
-        baseurl: "https://packages.cloud.google.com/yum/repos/gcsfuse-el{{ ansible_distribution_major_version }}-x86_64"
-        gpgcheck: yes
-        gpgkey: "{{ repo_key_url }}"
-      when: ansible_os_family == "RedHat"
-
-    - name: Install gcsfuse
-      vars:
-        package_name:
-          Debian: gcsfuse
-          RedHat: gcsfuse-fuse
-      package:
-        name: "{{ package_name[ansible_os_family] }}"
-        state: present
-
-    - name: Create mount point
-      file:
-        path: /var/moodledata
-        state: directory
-    
     - name: Mount GCS bucket
       mount:
         path: /var/moodledata
@@ -125,6 +108,6 @@
         state: mounted
 
     - name: "Clone Moodle from GitHub"
-      command: git clone --depth 1 --branch v{{ moodle_version }}  {{ moodle_scr }} {{ root }}
+      command: git clone --depth 1 --branch v{{ moodle_version }}  {{ moodle_git_scr }} {{ nginx_root_dir }}
       tags:
         - web
