@@ -13,3 +13,6 @@
 
 - src: bertvv.mariadb
   version: v3.1.3
+
+- src: ericsysmin.gcsfuse
+  version: 

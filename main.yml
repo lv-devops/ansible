@@ -38,8 +38,10 @@
       nginx_listen_ipv6: true
       nginx_service_state: started
       nginx_service_enabled: yes
+      nginx_conf_template: "nginx.conf.j2"
+      nginx_vhost_template: "vhost.j2"
       nginx_vhosts:
-        - listen: "80 http2"
+        - listen: "80"
           server_name: "example.com"
           server_name_redirect: "www.example.com"
           root: "/var/www/html/moodle"
@@ -66,6 +68,8 @@
             }
     tags:
       - web
+  - role: ericsysmin.gcsfuse
+    tags: web
   - role: bertvv.mariadb
     tags:
       - db
