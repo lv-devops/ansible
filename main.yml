@@ -16,6 +16,28 @@
     - vars/var_mariadb.yml
 
   pre_tasks:
+    - name: Check if PHP is installed
+      shell: dpkg -s php | grep "install ok installed"
+      when: ansible_os_family == 'Debian'
+      register: dpkg_php
+
+    - name: Check if PHP is installed
+      shell: rpm -q php
+      when: ansible_os_family == 'RedHat'
+      register: rpm_php
+
+    - name: Uninstall PHP
+      apt:
+        name: php
+        state: absent
+      when: (dpkg_php.stdout == 'install ok installed\n' or rpm_php.stdout != 'package php is not installed') and ansible_os_family == 'Debian'
+
+    - name: Uninstall PHP
+      yum:
+        name: php
+        state: absent
+      when: (dpkg_php.stdout == 'install ok installed\n' or rpm_php.stdout != 'package php is not installed') and ansible_os_family == 'RedHat'
+
     - name: Update apt cache.
       apt: update_cache=yes cache_valid_time=600
       when: ansible_os_family == 'Debian'
@@ -63,7 +85,7 @@
       nginx_listen_ipv6: true
       nginx_service_state: started
       nginx_service_enabled: yes
-      nginx_conf_template: "nginx.conf.j2"
+#      nginx_conf_template: "nginx.conf.j2"
       nginx_vhost_template: "vhost.j2"
       nginx_vhosts:
         - listen: "80"
@@ -71,13 +93,14 @@
           server_name_redirect: "www.demo.ss.lk"
           root: "/var/www/html/moodle"
           index: "index.php"
-          error_page: "/var/log/nginx/error.log"
+#          error_page: "500 502 503 504 /custom_50x.html"
           access_log: "/var/log/nginx/demo_access.log"
-          error_log: "/var/log/nginx/demo__error.log"
+          error_log: "/var/log/nginx/demo_error.log"
           state: "present"
           template: "{{ nginx_vhost_template }}"
           filename: "demo.conf"
           extra_parameters: |
+
             location ~ \.php$ {
               fastcgi_split_path_info  ^(.+\.php)(/.+)$;
               fastcgi_index            index.php;
@@ -89,7 +112,7 @@
             }
             location /dataroot/ {
               internal;
-              alias /var/moodledata; # ensure the path ends with /
+              alias /var/moodledata/; # ensure the path ends with /
             }
     tags:
       - web
@@ -107,7 +130,38 @@
         opts: rw,allow_other
         state: mounted
 
-    - name: "Clone Moodle from GitHub"
-      command: git clone --depth 1 --branch v{{ moodle_version }}  {{ moodle_git_scr }} {{ nginx_root_dir }}
+    - name: Check if www moodle directory exists and is not empty
+      stat:
+        path: "{{ nginx_root_dir }}"
+      register: dir_status
+
+    - name: Clean Moodle directory if it exists and is not empty
+      file:
+        path: "{{ nginx_root_dir }}/{{ item }}"
+        state: absent
+      with_fileglob: "{{ nginx_root_dir }}/*"
+      when: dir_status.stat.exists and dir_status.stat.isdir and dir_status.stat.size > 0
+      register: clean_status
+
+#- name: Clone git repo if directory is empty or does not exist
+#  git:
+#    repo: git://github.com/user/repo.git
+#    dest: /path/to/directory
+#  when: not (dir_status.stat.exists and dir_status.stat.isdir and dir_status.stat.size > 0) or clean_status.changed
+#  register: git_status
+
+
+    - name: Git clone a single branch of Moodle
+      git:
+        repo: "{{ moodle_git_scr }}"
+        dest: "{{ nginx_root_dir }}"
+        single_branch: yes
+        version: "v{{ moodle_version }}"
+      when: not (dir_status.stat.exists and dir_status.stat.isdir and dir_status.stat.size > 0) or clean_status.changed
       tags:
         - web
+
+#    - name: "Clone Moodle from GitHub"
+#      command: git clone --depth 1 --branch v{{ moodle_version }}  {{ moodle_git_scr }} {{ nginx_root_dir }}
+#      tags:
+#        - web
