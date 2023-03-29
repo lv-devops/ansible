@@ -4,7 +4,6 @@
 
   vars:
     nginx_listen_port: 80
-    nginx_remove_default_vhost: false
     nginx_root_dir: "/var/www/html/moodle"
     nginx_index_file: "index.php"
 
@@ -83,15 +82,16 @@
       - web
   - role: geerlingguy.nginx
     vars:
-      nginx_listen_ipv6: true
+      nginx_listen_ipv6: false
+      nginx_remove_default_vhost: true
       nginx_service_state: started
       nginx_service_enabled: yes
 #      nginx_conf_template: "nginx.conf.j2"
 #      nginx_vhost_template: "vhost.j2"
       nginx_vhosts:
         - listen: "80"
-          server_name: "demo.ss.lk"
-          server_name_redirect: "www.demo.ss.lk"
+          server_name: "demo.ss.lk default_server"
+#          server_name_redirect: "www.demo.ss.lk"
           root: "/var/www/html/moodle"
           index: "index.php"
 #          error_page: "500 502 503 504 /custom_50x.html"
@@ -102,7 +102,7 @@
           filename: "demo.conf"
           extra_parameters: |
 
-            location ~ \.php$ {
+            location ~ [^/]\.php(/|$) {
               fastcgi_split_path_info  ^(.+\.php)(/.+)$;
               fastcgi_index            index.php;
               fastcgi_pass             127.0.0.1:9000;
@@ -111,9 +111,14 @@
               fastcgi_param   SCRIPT_FILENAME $document_root$fastcgi_script_name;
               fastcgi_read_timeout 250s;
             }
+
             location /dataroot/ {
               internal;
               alias /var/moodledata/; # ensure the path ends with /
+            }
+
+
+            location / {
             }
     tags:
       - web
@@ -150,7 +155,7 @@
         dest: "{{ nginx_root_dir }}"
         single_branch: yes
         version: "v{{ moodle_version }}"
-      when: not (dir_status.stat.exists and dir_status.stat.isdir and dir_status.stat.size > 0) or clean_status.changed
+#      when: not (dir_status.stat.exists and dir_status.stat.isdir and dir_status.stat.size > 0) or clean_status.changed
       tags:
         - web
 

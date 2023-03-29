@@ -5,11 +5,10 @@
 DIRPATH=/tmp/demo
 mkdir -p $DIRPATH
 
-# Check OS family system
-OS=$(uname -s)
 
-if [[ "$OS" == "Linux" ]]; then
-  if [[ -f "/etc/debian_version" ]]; then
+
+# Check the Linux distribution
+if [[ $(lsb_release -si) == "Ubuntu" ]] || [[ $(lsb_release -si) == "Debian" ]]; then
     echo "Debian or Ubuntu based system"
     if ! grep -q "ansible/ansible" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
       #export DEBIAN_FRONTEND=noninteractive
@@ -17,16 +16,14 @@ if [[ "$OS" == "Linux" ]]; then
       sudo apt update -y
     fi
     sudo apt install -y ansible
-  elif [[ -f "/etc/redhat-release" ]]; then
+elif [[ $(lsb_release -si) == "CentOS" ]] || [[ $(lsb_release -si) == "RedHat" ]]; then
     echo "Red Hat or CentOS based system"
     sudo yum install epel-release -y
     sudo yum update -y
     sudo yum install -y ansible git
-  else
-    echo "Unsupported Linux distribution"
-  fi
 else
-  echo "Unsupported family Linux"
+    echo "Unsupported distribution"
+    exit 1
 fi
 
 
