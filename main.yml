@@ -4,6 +4,7 @@
 
   vars:
     nginx_listen_port: 80
+    nginx_remove_default_vhost: false
     nginx_root_dir: "/var/www/html/moodle"
     nginx_index_file: "index.php"
 
@@ -86,7 +87,7 @@
       nginx_service_state: started
       nginx_service_enabled: yes
 #      nginx_conf_template: "nginx.conf.j2"
-      nginx_vhost_template: "vhost.j2"
+#      nginx_vhost_template: "vhost.j2"
       nginx_vhosts:
         - listen: "80"
           server_name: "demo.ss.lk"
@@ -130,26 +131,18 @@
         opts: rw,allow_other
         state: mounted
 
-    - name: Check if www moodle directory exists and is not empty
-      stat:
-        path: "{{ nginx_root_dir }}"
-      register: dir_status
-
-    - name: Clean Moodle directory if it exists and is not empty
+    - name: Delete Moodle content & directory
       file:
-        path: "{{ nginx_root_dir }}/{{ item }}"
         state: absent
-      with_fileglob: "{{ nginx_root_dir }}/*"
-      when: dir_status.stat.exists and dir_status.stat.isdir and dir_status.stat.size > 0
-      register: clean_status
+        path: "{{ nginx_root_dir }}"
 
-#- name: Clone git repo if directory is empty or does not exist
-#  git:
-#    repo: git://github.com/user/repo.git
-#    dest: /path/to/directory
-#  when: not (dir_status.stat.exists and dir_status.stat.isdir and dir_status.stat.size > 0) or clean_status.changed
-#  register: git_status
-
+    - name: Create an empty Moodle www directory
+      file:
+        path: "{{ nginx_root_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: 0755
 
     - name: Git clone a single branch of Moodle
       git:
@@ -161,7 +154,3 @@
       tags:
         - web
 
-#    - name: "Clone Moodle from GitHub"
-#      command: git clone --depth 1 --branch v{{ moodle_version }}  {{ moodle_git_scr }} {{ nginx_root_dir }}
-#      tags:
-#        - web
