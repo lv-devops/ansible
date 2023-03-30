@@ -12,7 +12,7 @@ if [[ $(lsb_release -si) == "Ubuntu" ]] || [[ $(lsb_release -si) == "Debian" ]];
     echo "Debian or Ubuntu based system"
     if ! grep -q "ansible/ansible" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
       #export DEBIAN_FRONTEND=noninteractive
-      sudo apt-add-repository ppa:ansible/ansible
+      sudo apt-add-repository -y ppa:ansible/ansible
       sudo apt update -y
     fi
     sudo apt install -y ansible

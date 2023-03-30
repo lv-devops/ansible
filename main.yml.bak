@@ -126,5 +126,6 @@
 
     - name: "Clone Moodle from GitHub"
       command: git clone --depth 1 --branch v{{ moodle_version }}  {{ moodle_scr }} {{ root }}
+	# git clone --depth 1 --branch v4.1.0  https://github.com/moodle/moodle.git /var/www/html/moodle/
       tags:
         - web

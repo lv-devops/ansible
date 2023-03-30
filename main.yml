@@ -89,8 +89,8 @@
 #      nginx_conf_template: "nginx.conf.j2"
 #      nginx_vhost_template: "vhost.j2"
       nginx_vhosts:
-        - listen: "80"
-          server_name: "demo.ss.lk default_server"
+        - listen: "80 default_server"
+          server_name: "demo.ss.lk"
 #          server_name_redirect: "www.demo.ss.lk"
           root: "/var/www/html/moodle"
           index: "index.php"
@@ -117,17 +117,26 @@
               alias /var/moodledata/; # ensure the path ends with /
             }
 
-
+                                 	
             location / {
             }
+ #   register: nginx_conf
     tags:
       - web
+
   - role: ericsysmin.gcsfuse
     tags: web
+
   - role: bertvv.mariadb
     tags:
       - db
   tasks:
+    - name: restart PHP-fpm service
+      service:
+        name: "{{ php_executable }}-fpm"
+        state: restarted
+#      when: nginx_conf.changed
+
     - name: Mount GCS bucket
       mount:
         path: /var/moodledata
@@ -152,7 +161,7 @@
     - name: Git clone a single branch of Moodle
       git:
         repo: "{{ moodle_git_scr }}"
-        dest: "{{ nginx_root_dir }}"
+        dest: "{{ nginx_root_dir }}/"
         single_branch: yes
         version: "v{{ moodle_version }}"
 #      when: not (dir_status.stat.exists and dir_status.stat.isdir and dir_status.stat.size > 0) or clean_status.changed
